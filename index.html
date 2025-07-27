@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piano di Studio Interattivo - Ingegneria UNIVPM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f7f4;
+            color: #4a4a4a;
+        }
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: #c084fc;
+            border-bottom-color: #c084fc;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .details-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.7s ease-in-out;
+        }
+        .details-content.open {
+            max-height: 2000px;
+        }
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .tag-mat { background-color: #e0e7ff; color: #4338ca; }
+        .tag-fis { background-color: #d1fae5; color: #065f46; }
+        .tag-inf { background-color: #fee2e2; color: #991b1b; }
+        .tag-eco { background-color: #fef3c7; color: #92400e; }
+        .tag-lin { background-color: #e5e7eb; color: #374151; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto px-4 py-8">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-purple-500 mb-2">Piano di Studio Interattivo</h1>
+            <p class="text-lg text-gray-600">Ingegneria Informatica e dell'Automazione - 1° Anno | UNIVPM</p>
+        </header>
+
+        <nav class="flex justify-center border-b border-gray-200 mb-12">
+            <button data-target="dashboard" class="nav-link active px-6 py-3 text-lg font-medium">Dashboard</button>
+            <button data-target="corsi" class="nav-link px-6 py-3 text-lg font-medium">Dettaglio Corsi</button>
+            <button data-target="strategia" class="nav-link px-6 py-3 text-lg font-medium">Strategia di Studio</button>
+            <a href="planner.html" class="nav-link px-6 py-3 text-lg font-medium">Planner</a>
+        </nav>
+
+        <main>
+            <section id="dashboard" class="content-section">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Panoramica del Primo Anno</h2>
+                    <p class="max-w-3xl mx-auto text-gray-600">Questa sezione offre una visione d'insieme del carico di lavoro del primo anno. I grafici interattivi mostrano la distribuzione dei Crediti Formativi Universitari (CFU) tra le varie materie e la progressione consigliata delle ore di studio settimanali, aiutandoti a visualizzare e pianificare il tuo impegno.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div class="card p-6">
+                        <h3 class="text-xl font-semibold text-center mb-4">Distribuzione CFU per Materia (Totale: 54)</h3>
+                        <div class="chart-container">
+                            <canvas id="cfuChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card p-6">
+                        <h3 class="text-xl font-semibold text-center mb-4">Progressione Ore di Studio Settimanali</h3>
+                        <div class="chart-container">
+                            <canvas id="hoursChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="corsi" class="content-section hidden">
+                 <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Dettaglio dei Corsi</h2>
+                    <p class="max-w-3xl mx-auto text-gray-600">Esplora ogni materia del primo anno. Clicca su una scheda per visualizzare i dettagli, inclusi gli argomenti chiave, gli obiettivi formativi e i testi consigliati. Questa sezione è pensata per darti una comprensione approfondita di ciò che affronterai in ogni corso.</p>
+                </div>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8" id="course-cards-container">
+                </div>
+            </section>
+
+            <section id="strategia" class="content-section hidden">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Strategie per uno Studio Efficace</h2>
+                    <p class="max-w-3xl mx-auto text-gray-600">Il successo nello studio online dipende da una buona organizzazione. Qui troverai i principi fondamentali per una pianificazione flessibile ed efficace, consigli per gestire il tempo e suggerimenti per mantenere il benessere durante il tuo percorso accademico.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="card p-8">
+                        <h3 class="text-2xl font-bold text-purple-500 mb-4">Principi di Pianificazione</h3>
+                        <ul class="space-y-4 text-gray-700">
+                            <li class="flex items-start"><span class="text-purple-500 mr-3 mt-1">&#10003;</span><span><strong class="font-semibold">Obiettivi e Priorità:</strong> Definisci cosa vuoi raggiungere e ordina i compiti per importanza.</span></li>
+                            <li class="flex items-start"><span class="text-purple-500 mr-3 mt-1">&#10003;</span><span><strong class="font-semibold">Costanza:</strong> Mantieni una routine regolare. Brevi sessioni costanti sono meglio di lunghe maratone sporadiche.</span></li>
+                            <li class="flex items-start"><span class="text-purple-500 mr-3 mt-1">&#10003;</span><span><strong class="font-semibold">Stime Realistiche:</strong> Sottostimare il tempo è comune. Inizia raddoppiando le tue stime e poi aggiusta con l'esperienza.</span></li>
+                            <li class="flex items-start"><span class="text-purple-500 mr-3 mt-1">&#10003;</span><span><strong class="font-semibold">Affronta il Difficile:</strong> Inizia con i compiti più impegnativi per evitare la procrastinazione.</span></li>
+                            <li class="flex items-start"><span class="text-purple-500 mr-3 mt-1">&#10003;</span><span><strong class="font-semibold">Monotasking:</strong> Concentrati su una sola attività alla volta per massimizzare l'efficienza.</span></li>
+                        </ul>
+                    </div>
+                     <div class="card p-8">
+                        <h3 class="text-2xl font-bold text-purple-500 mb-4">Benessere e Routine</h3>
+                        <ul class="space-y-4 text-gray-700">
+                            <li class="flex items-start"><span class="text-purple-500 mr-3 mt-1">&#10003;</span><span><strong class="font-semibold">Pause Regolari:</strong> Integra pause di 5-15 minuti tra sessioni di studio di 1.5-2 ore per mantenere alta la concentrazione.</span></li>
+                            <li class="flex items-start"><span class="text-purple-500 mr-3 mt-1">&#10003;</span><span><strong class="font-semibold">Spazio Dedicato:</strong> Crea un'area di studio organizzata e priva di distrazioni.</span></li>
+                            <li class="flex items-start"><span class="text-purple-500 mr-3 mt-1">&#10003;</span><span><strong class="font-semibold">Equilibrio:</strong> Pianifica non solo lo studio, ma anche sonno, pasti, attività fisica e svago. Un corpo e una mente sani apprendono meglio.</span></li>
+                            <li class="flex items-start"><span class="text-purple-500 mr-3 mt-1">&#10003;</span><span><strong class="font-semibold">Gruppi di Studio:</strong> Combatti l'isolamento collaborando con i compagni. Condividere e scambiare idee è fondamentale.</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+    </div>
+
+    <script>
+        const courseData = [
+            {
+                title: 'Fisica Generale 1',
+                cfu: 9,
+                semester: 1,
+                category: 'fis',
+                topics: ['Meccanica del punto e dei corpi rigidi', 'Lavoro ed energia', 'Meccanica dei fluidi', 'Termodinamica', 'Introduzione all\'elettromagnetismo'],
+                objectives: 'Acquisire il linguaggio e la metodologia delle scienze fisiche, sviluppare capacità analitiche e di ragionamento logico-quantitativo per risolvere problemi ingegneristici.',
+                books: 'A. Giambattista, "Fisica generale. Principi e applicazioni" (McGraw-Hill); Ferrari et al., "Fisica I - Meccanica e Termodinamica" (Idelson - Gnocchi).'
+            },
+            {
+                title: 'Fondamenti di Informatica',
+                cfu: 9,
+                semester: 1,
+                category: 'inf',
+                topics: ['Architettura del calcolatore', 'Rappresentazione dell\'informazione', 'Logica booleana', 'Fondamenti di programmazione (C++ o Python)', 'Algoritmi e strutture dati base'],
+                objectives: 'Comprendere il funzionamento di un calcolatore e acquisire la padronanza di un linguaggio di programmazione per risolvere problemi, implementare algoritmi e fare debugging.',
+                books: 'Per Python: C. S. Horstmann, "Concetti di informatica e fondamenti di Python"; Per C++: H. M. Deitel, "C++ fondamenti di programmazione" (Pearson/APOGEO).'
+            },
+            {
+                title: 'Algebra Lineare e Geometria',
+                cfu: 6,
+                semester: 1,
+                category: 'mat',
+                topics: ['Numeri complessi', 'Matrici e determinanti', 'Sistemi lineari', 'Spazi vettoriali', 'Autovalori e autovettori', 'Geometria analitica piana e nello spazio'],
+                objectives: 'Fornire conoscenze teoriche e applicative dell\'Algebra Lineare e della Geometria Analitica, promuovere il ragionamento logico-deduttivo e la capacità di modellazione.',
+                books: 'Abate, de Fabritiis, "Geometria analitica con elementi di algebra lineare" (McGrawHill); A. Savo, "Geometria" (Hoepli).'
+            },
+            {
+                title: 'Analisi Matematica 1',
+                cfu: 9,
+                semester: 1,
+                category: 'mat',
+                topics: ['Numeri reali e complessi', 'Successioni e serie', 'Limiti e continuità', 'Calcolo differenziale (derivate, Teoremi di Rolle, Lagrange, Taylor)', 'Calcolo integrale', 'Studio di funzione'],
+                objectives: 'Fornire gli strumenti del calcolo differenziale e integrale per funzioni di una variabile, sviluppando capacità di analisi e problem-solving.',
+                books: 'Bramanti et al., "Analisi matematica 1" (Zanichelli); Marcellini-Sbordone, "Analisi Matematica Uno" (Liguori).'
+            },
+            {
+                title: 'Fisica Generale 2',
+                cfu: 6,
+                semester: 2,
+                category: 'fis',
+                topics: ['Termodinamica avanzata', 'Elettromagnetismo (leggi di Maxwell)', 'Circuiti in corrente continua e alternata', 'Onde elettromagnetiche', 'Ottica geometrica e fisica'],
+                objectives: 'Fornire le basi del metodo sperimentale e le leggi fondamentali dell\'elettromagnetismo e dell\'ottica per analizzare e modellizzare problemi ingegneristici.',
+                books: 'Mazzoldi et al., "Elementi di Fisica - Elettromagnetismo, Onde" (EdiSes); Mencuccini-Silvestrini, "Fisica II" (Liguori).'
+            },
+            {
+                title: 'Analisi Matematica 2',
+                cfu: 9,
+                semester: 2,
+                category: 'mat',
+                topics: ['Calcolo differenziale per funzioni di più variabili', 'Ottimizzazione libera e vincolata (moltiplicatori di Lagrange)', 'Integrali multipli, curvilinei e di superficie', 'Campi vettoriali (teoremi di Green, Stokes, Gauss)', 'Equazioni differenziali ordinarie'],
+                objectives: 'Fornire strumenti matematici avanzati per funzioni di più variabili e la risoluzione di equazioni differenziali, essenziali per modellizzare fenomeni ingegneristici.',
+                books: 'Bramanti et al., "Analisi matematica 2" (Zanichelli); Fusco et al., "Analisi Matematica 2" (Liguori).'
+            },
+            {
+                title: 'Economia dell\'Impresa',
+                cfu: 6,
+                semester: 2,
+                category: 'eco',
+                topics: ['Forme giuridiche d\'impresa', 'Teoria della produzione e dei costi', 'Forme di mercato (concorrenza, monopolio)', 'Analisi di bilancio (ROI, ROE)', 'Valutazione finanziaria dei progetti (VAN, TIR)'],
+                objectives: 'Comprendere il comportamento delle imprese, misurarne le performance e analizzare le decisioni aziendali chiave in contesti di mercato diversi.',
+                books: 'N. Gregory Mankiw et al., "Principi di economia per l\'impresa" (Zanichelli).'
+            },
+            {
+                title: 'Lingua Straniera',
+                cfu: 3,
+                semester: 2,
+                category: 'lin',
+                topics: ['Grammatica e lessico avanzato (livello B2)', 'Comprensione scritta e orale di testi tecnici', 'Produzione orale e scritta su argomenti familiari e professionali'],
+                objectives: 'Acquisire le competenze linguistiche in inglese (livello B2) necessarie per la comprensione di testi tecnici e per la comunicazione in un contesto internazionale.',
+                books: 'Dummett et al., "Life – Upper Intermediate B2" (CENGAGE); Murphy, "Essential Grammar in Use".'
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+            const courseContainer = document.getElementById('course-cards-container');
+
+            const tagClasses = {
+                mat: 'tag-mat',
+                fis: 'tag-fis',
+                inf: 'tag-inf',
+                eco: 'tag-eco',
+                lin: 'tag-lin'
+            };
+
+            courseData.forEach(course => {
+                const card = document.createElement('div');
+                card.className = 'card cursor-pointer';
+                card.innerHTML = `
+                    <div class="p-6">
+                        <div class="flex justify-between items-start">
+                            <h4 class="text-xl font-bold text-gray-800 mb-2">${course.title}</h4>
+                            <span class="tag ${tagClasses[course.category]}">${course.cfu} CFU</span>
+                        </div>
+                        <p class="text-sm text-gray-500 mb-4">Semestre: ${course.semester}</p>
+                        <div class="details-content">
+                            <div class="border-t pt-4 mt-4">
+                                <h5 class="font-semibold mb-2">Argomenti Chiave:</h5>
+                                <ul class="list-disc list-inside text-sm text-gray-600 space-y-1 mb-4">
+                                    ${course.topics.map(topic => `<li>${topic}</li>`).join('')}
+                                </ul>
+                                <h5 class="font-semibold mb-2">Obiettivi:</h5>
+                                <p class="text-sm text-gray-600 mb-4">${course.objectives}</p>
+                                <h5 class="font-semibold mb-2">Testi Consigliati:</h5>
+                                <p class="text-sm text-gray-600">${course.books}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                courseContainer.appendChild(card);
+
+                card.addEventListener('click', () => {
+                    card.querySelector('.details-content').classList.toggle('open');
+                });
+            });
+            
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    const targetId = link.dataset.target;
+
+                    navLinks.forEach(nav => nav.classList.remove('active'));
+                    link.classList.add('active');
+
+                    contentSections.forEach(section => {
+                        if (section.id === targetId) {
+                            section.classList.remove('hidden');
+                        } else {
+                            section.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+            const cfuCtx = document.getElementById('cfuChart').getContext('2d');
+            new Chart(cfuCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: courseData.map(c => c.title),
+                    datasets: [{
+                        label: 'CFU',
+                        data: courseData.map(c => c.cfu),
+                        backgroundColor: [
+                            '#a78bfa', '#c084fc', '#f9a8d4', '#fde047',
+                            '#a7f3d0', '#6ee7b7', '#fca5a5', '#fdba74'
+                        ],
+                        borderColor: '#f8f7f4',
+                        borderWidth: 4,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed + ' CFU';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const hoursCtx = document.getElementById('hoursChart').getContext('2d');
+            new Chart(hoursCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Fase 1: Inizio (S. 1-4)', 'Fase 2: Immersione (S. 5-12)', 'Fase 3: Intensiva (S. 13+)'],
+                    datasets: [{
+                        label: 'Ore Minime',
+                        data: [15, 25, 35],
+                        borderColor: '#a78bfa',
+                        backgroundColor: 'rgba(167, 139, 250, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'Ore Massime',
+                        data: [20, 30, 40],
+                        borderColor: '#f9a8d4',
+                        backgroundColor: 'rgba(249, 168, 212, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Ore di studio a settimana'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
